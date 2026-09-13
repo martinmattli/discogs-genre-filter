@@ -1,18 +1,19 @@
--- Schema fuer die Discogs-Collection.
--- In Supabase: SQL Editor -> New query -> diesen Inhalt einfuegen -> Run.
+-- Schema for the Discogs collection.
+-- In Supabase: SQL Editor -> New query -> paste this content -> Run.
 
--- instance_id ist der Primary Key (nicht id/release_id), weil die Collection
--- mehrere Exemplare desselben Release enthalten kann (id waere dann doppelt).
+-- instance_id is the primary key (not id/release_id), because the
+-- collection can contain multiple copies of the same release (id would
+-- then be duplicated).
 create table if not exists releases (
-    instance_id bigint primary key,      -- Discogs collection instance_id (eindeutig pro Exemplar)
-    id bigint,                           -- Discogs release_id (kann mehrfach vorkommen)
+    instance_id bigint primary key,      -- Discogs collection instance_id (unique per copy)
+    id bigint,                           -- Discogs release_id (can occur more than once)
     artist text,
     title text,
     year int,
     label text,
     format text,
-    genres text[],                       -- z.B. {Rock, Electronic}
-    styles text[],                       -- z.B. {"Deep House", "Krautrock"}
+    genres text[],                       -- e.g. {Rock, Electronic}
+    styles text[],                       -- e.g. {"Deep House", "Krautrock"}
     cover_url text,
     added_at timestamptz,
     synced_at timestamptz default now()

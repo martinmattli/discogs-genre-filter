@@ -1,7 +1,7 @@
 """
-Reine, UI-unabhaengige Business-Logik fuer Filterung und Pagination der
-Collection - ausgelagert aus app.py, damit sie sich ohne Streamlit-Kontext
-testen laesst.
+Pure, UI-independent business logic for filtering and paginating the
+collection - extracted from app.py so it can be tested without a
+Streamlit context.
 """
 
 
@@ -13,10 +13,10 @@ def filter_releases(
     search: str | None = None,
     year_range: tuple[int, int] | None = None,
 ) -> list[dict]:
-    """Wendet alle aktiven Filter (UND-verknuepft) auf die Release-Liste an.
+    """Applies all active filters (AND-combined) to the release list.
 
-    Innerhalb eines Filters (z.B. mehrere ausgewaehlte Genres) gilt ODER:
-    ein Release passt, wenn mindestens eines seiner Genres ausgewaehlt ist.
+    Within a single filter (e.g. several selected genres), OR applies:
+    a release matches if at least one of its genres is selected.
     """
     filtered = releases
 
@@ -47,20 +47,20 @@ def filter_releases(
 
 
 def total_pages_for(item_count: int, page_size: int) -> int:
-    """Anzahl Seiten (aufgerundet), mindestens 1 - auch bei 0 Treffern soll
-    es eine (leere) Seite 1 geben, statt einer Division-durch-sinnlos-0-Situation."""
+    """Number of pages (rounded up), at least 1 - even with 0 results there
+    should be one (empty) page 1, instead of a meaningless division by 0 case."""
     if page_size <= 0:
-        raise ValueError("page_size muss positiv sein")
-    return max(1, -(-item_count // page_size))  # ceil division ohne math.ceil
+        raise ValueError("page_size must be positive")
+    return max(1, -(-item_count // page_size))  # ceil division without math.ceil
 
 
 def clamp_page(page: int, total_pages: int) -> int:
-    """Haelt die angeforderte Seite innerhalb [1, total_pages] - z.B. wenn
-    ein neuer, engerer Filter weniger Seiten ergibt als die zuvor aktive Seite."""
+    """Keeps the requested page within [1, total_pages] - e.g. when a new,
+    narrower filter results in fewer pages than the previously active page."""
     return min(max(page, 1), total_pages)
 
 
 def paginate(items: list[dict], page: int, page_size: int) -> list[dict]:
-    """Gibt die Items fuer die angefragte (1-indexierte) Seite zurueck."""
+    """Returns the items for the requested (1-indexed) page."""
     start = (page - 1) * page_size
     return items[start : start + page_size]

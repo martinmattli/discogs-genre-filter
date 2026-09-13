@@ -1,10 +1,9 @@
 """
-Streamlit-Frontend: zeigt die in Supabase gespeicherte Discogs-Collection
-an, mit Filtern nach Genre/Style/Jahr/Format sowie einem manuellen
-Sync-Button.
+Streamlit frontend: displays the Discogs collection stored in Supabase,
+with filters by genre/style/year/format plus a manual sync button.
 
-Passwort-Schutz: einfaches Gate ueber st.secrets["APP_PASSWORD"] bzw.
-die Umgebungsvariable APP_PASSWORD (lokal via .env).
+Password protection: a simple gate via st.secrets["APP_PASSWORD"] or the
+APP_PASSWORD environment variable (locally via .env).
 """
 import os
 
@@ -17,13 +16,13 @@ from sync import sync_discogs_to_supabase
 
 load_dotenv()
 
-st.set_page_config(page_title="Meine Plattensammlung", page_icon="💿", layout="wide")
+st.set_page_config(page_title="My Record Collection", page_icon="💿", layout="wide")
 
 
 def get_secret(name: str) -> str | None:
-    # st.secrets wird auf Streamlit Cloud genutzt, os.environ lokal (.env).
-    # Existiert keine secrets.toml (lokaler Fall), wirft st.secrets bei jedem
-    # Zugriff einen Fehler statt einfach leer zu sein -> abfangen.
+    # st.secrets is used on Streamlit Cloud, os.environ locally (.env).
+    # If no secrets.toml exists (the local case), st.secrets raises an error
+    # on every access instead of just being empty -> catch it.
     try:
         if name in st.secrets:
             return st.secrets[name]
@@ -35,19 +34,19 @@ def get_secret(name: str) -> str | None:
 def check_password() -> bool:
     expected = get_secret("APP_PASSWORD")
     if not expected:
-        st.error("APP_PASSWORD ist nicht konfiguriert (.env oder st.secrets).")
+        st.error("APP_PASSWORD is not configured (.env or st.secrets).")
         return False
 
     if st.session_state.get("authenticated"):
         return True
 
-    pw = st.text_input("Passwort", type="password")
+    pw = st.text_input("Password", type="password")
     if st.button("Login"):
         if pw == expected:
             st.session_state["authenticated"] = True
             st.rerun()
         else:
-            st.error("Falsches Passwort.")
+            st.error("Wrong password.")
     return False
 
 
@@ -55,8 +54,8 @@ def check_password() -> bool:
 def load_releases() -> list[dict]:
     supabase = create_client(get_secret("SUPABASE_URL"), get_secret("SUPABASE_KEY"))
 
-    # PostgREST liefert pro Request standardmaessig max. 1000 Zeilen - fuer
-    # groessere Sammlungen muessen wir seitenweise nachladen (.range()).
+    # PostgREST returns at most 1000 rows per request by default - for
+    # larger collections we need to page through with .range().
     page_size = 1000
     all_rows = []
     start = 0
@@ -72,24 +71,24 @@ def load_releases() -> list[dict]:
 
 
 def main():
-    st.title("💿 Meine Plattensammlung")
+    st.title("💿 My Record Collection")
 
     col1, col2 = st.columns([3, 1])
     with col2:
-        if st.button("🔄 Mit Discogs synchronisieren"):
-            progress = st.progress(0.0, text="Starte Sync...")
+        if st.button("🔄 Sync with Discogs"):
+            progress = st.progress(0.0, text="Starting sync...")
 
             def on_progress(page, total):
-                progress.progress(page / total, text=f"Seite {page}/{total}")
+                progress.progress(page / total, text=f"Page {page}/{total}")
 
-            with st.spinner("Synchronisiere..."):
+            with st.spinner("Syncing..."):
                 count = sync_discogs_to_supabase(progress_cb=on_progress)
             st.cache_data.clear()
-            st.success(f"{count} Releases synchronisiert.")
+            st.success(f"{count} releases synced.")
 
     releases = load_releases()
     if not releases:
-        st.info("Noch keine Daten. Klicke auf 'Mit Discogs synchronisieren'.")
+        st.info("No data yet. Click 'Sync with Discogs'.")
         return
 
     all_genres = sorted({g for r in releases for g in (r.get("genres") or [])})
@@ -97,26 +96,25 @@ def main():
     all_formats = sorted({r["format"] for r in releases if r.get("format")})
 
     with col1:
-        st.caption(f"{len(releases)} Platten in der Sammlung")
+        st.caption(f"{len(releases)} records in the collection")
 
     years = [r["year"] for r in releases if r.get("year")]
     min_year, max_year = (min(years), max(years)) if years else (None, None)
 
-    # Alle Filter-Widgets in einem Formular: der Rerun (und damit das erneute
-    # Filtern/Rendern) passiert erst beim Klick auf "Filter anwenden", nicht
-    # bei jeder einzelnen Widget-Aenderung - spart Rechenzeit bei grossen
-    # Sammlungen.
+    # All filter widgets in one form: the rerun (and therefore the
+    # re-filtering/re-rendering) only happens on "Apply filters", not on
+    # every single widget change - saves compute time for large collections.
     with st.sidebar.form("filter_form"):
-        st.header("Filter")
+        st.header("Filters")
         selected_genres = st.multiselect("Genre", all_genres)
         selected_styles = st.multiselect("Style", all_styles)
         selected_formats = st.multiselect("Format", all_formats)
-        search = st.text_input("Suche (Artist/Titel)")
+        search = st.text_input("Search (artist/title)")
         if years:
-            year_range = st.slider("Jahr", min_year, max_year, (min_year, max_year))
+            year_range = st.slider("Year", min_year, max_year, (min_year, max_year))
         else:
             year_range = None
-        st.form_submit_button("✅ Filter anwenden")
+        st.form_submit_button("✅ Apply filters")
 
     filtered = filter_releases(
         releases,
@@ -127,11 +125,11 @@ def main():
         year_range=year_range,
     )
 
-    st.write(f"**{len(filtered)}** Treffer")
+    st.write(f"**{len(filtered)}** results")
 
-    # Pagination: bei Filteraenderung automatisch zurueck auf Seite 1 springen,
-    # sonst wuerde man z.B. auf Seite 5 landen, obwohl der neue Filter nur
-    # 2 Seiten Ergebnisse hat.
+    # Pagination: jump back to page 1 automatically when a filter changes,
+    # otherwise you might land on page 5 even though the new filter only
+    # has 2 pages of results.
     filter_signature = (
         tuple(selected_genres), tuple(selected_styles), tuple(selected_formats),
         search, year_range,
@@ -140,18 +138,18 @@ def main():
         st.session_state["_filter_signature"] = filter_signature
         st.session_state["page"] = 1
 
-    page_size = st.sidebar.selectbox("Eintraege pro Seite", [25, 50, 100], index=1)
+    page_size = st.sidebar.selectbox("Items per page", [25, 50, 100], index=1)
     total_pages = total_pages_for(len(filtered), page_size)
     page = clamp_page(st.session_state.get("page", 1), total_pages)
 
     nav_cols = st.columns([1, 2, 1])
     with nav_cols[0]:
-        if st.button("⬅️ Zurück", disabled=page <= 1):
+        if st.button("⬅️ Previous", disabled=page <= 1):
             page -= 1
     with nav_cols[1]:
-        st.markdown(f"<div style='text-align:center'>Seite {page} von {total_pages}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='text-align:center'>Page {page} of {total_pages}</div>", unsafe_allow_html=True)
     with nav_cols[2]:
-        if st.button("Weiter ➡️", disabled=page >= total_pages):
+        if st.button("Next ➡️", disabled=page >= total_pages):
             page += 1
     st.session_state["page"] = page
 

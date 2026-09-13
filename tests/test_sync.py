@@ -1,9 +1,9 @@
 """
-Tests fuer die Discogs -> DB-Zeile Konvertierung in sync.py. Das ist die
-Stelle mit der meisten "Business-Logik" im Sync (mehrere Artists/Labels/
-Formats zusammenfuehren, fehlende Felder abfangen) - und genau da sind
-in der Vergangenheit reale Bugs aufgetreten (fehlendes 'year', mehrere
-Exemplare desselben Release).
+Tests for the Discogs -> DB row conversion in sync.py. This is the spot
+with the most "business logic" in the sync (merging multiple artists/
+labels/formats, handling missing fields) - and exactly where real bugs
+have happened in the past (missing 'year', multiple copies of the same
+release).
 """
 from sync import _to_row
 
@@ -52,7 +52,7 @@ def test_to_row_joins_multiple_artists_and_labels():
 
 
 def test_to_row_handles_missing_optional_fields_gracefully():
-    # z.B. Releases ohne bekanntes Erscheinungsjahr (Discogs liefert dann oft 0)
+    # e.g. releases without a known release year (Discogs often returns 0)
     item = {"instance_id": 2, "basic_information": {"id": 2, "year": 0}}
     row = _to_row(item)
     assert row["year"] is None

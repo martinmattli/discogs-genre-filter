@@ -1,8 +1,8 @@
 """
-Tests fuer die reine Filter-/Pagination-Logik in filters.py.
-Absichtlich keine Syntax-/Typ-Checks - nur Business-Logik, die bei einer
-falschen Aenderung (z.B. UND/ODER vertauscht, Off-by-one bei Pagination)
-tatsaechlich falsche Ergebnisse fuer die Nutzerin liefern wuerde.
+Tests for the pure filter/pagination logic in filters.py.
+Deliberately no syntax/type checks - only business logic where a wrong
+change (e.g. AND/OR swapped, an off-by-one in pagination) would actually
+give the user wrong results.
 """
 from filters import clamp_page, filter_releases, paginate, total_pages_for
 
@@ -18,15 +18,15 @@ def test_no_filters_returns_everything():
 
 
 def test_genre_filter_is_or_within_the_same_filter():
-    # Ein Release passt, wenn mindestens eines seiner Genres in der Auswahl
-    # ist - nicht nur bei exakter Uebereinstimmung.
+    # A release matches if at least one of its genres is in the selection -
+    # not only on an exact match.
     result = filter_releases(SAMPLE, genres=["Electronic"])
     assert {r["title"] for r in result} == {"Leave Me Now", "Ambient Works"}
 
 
 def test_multiple_filter_categories_are_and_combined():
-    # Genre "Electronic" UND Format "CD" -> nur ein einziger Treffer,
-    # obwohl "Electronic" allein zwei Treffer haette.
+    # Genre "Electronic" AND format "CD" -> only a single match, even
+    # though "Electronic" alone would have two matches.
     result = filter_releases(SAMPLE, genres=["Electronic"], formats=["CD"])
     assert [r["title"] for r in result] == ["Ambient Works"]
 
@@ -50,13 +50,13 @@ def test_release_without_genres_never_matches_a_genre_filter():
 
 
 def test_total_pages_rounds_up_for_a_partial_last_page():
-    assert total_pages_for(item_count=101, page_size=25) == 5  # 4 volle + 1 angebrochene Seite
-    assert total_pages_for(item_count=100, page_size=25) == 4  # exakt aufgehend
-    assert total_pages_for(item_count=0, page_size=25) == 1    # keine Treffer -> trotzdem Seite 1
+    assert total_pages_for(item_count=101, page_size=25) == 5  # 4 full + 1 partial page
+    assert total_pages_for(item_count=100, page_size=25) == 4  # divides evenly
+    assert total_pages_for(item_count=0, page_size=25) == 1    # no results -> still page 1
 
 
 def test_clamp_page_keeps_page_within_bounds():
-    assert clamp_page(page=5, total_pages=2) == 2  # z.B. nach einem einschraenkenden Filter
+    assert clamp_page(page=5, total_pages=2) == 2  # e.g. after a narrowing filter
     assert clamp_page(page=0, total_pages=2) == 1
     assert clamp_page(page=1, total_pages=1) == 1
 
@@ -64,4 +64,4 @@ def test_clamp_page_keeps_page_within_bounds():
 def test_paginate_returns_correct_slice():
     items = list(range(1, 11))  # 1..10
     assert paginate(items, page=1, page_size=3) == [1, 2, 3]
-    assert paginate(items, page=4, page_size=3) == [10]  # letzte, angebrochene Seite
+    assert paginate(items, page=4, page_size=3) == [10]  # last, partial page

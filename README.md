@@ -1,69 +1,81 @@
 # 💿 Discogs Genre Filter
 
-Ein schlankes, selbst gehostetes Tool, um die eigene [Discogs](https://discogs.com)
-Plattensammlung nach Genre, Style, Jahr und Format zu filtern — etwas, das
-discogs.com selbst in der Collection-Ansicht nicht bietet.
+A lightweight, self-hosted tool to filter your own [Discogs](https://discogs.com)
+record collection by genre, style, year, and format — something the
+discogs.com collection view itself doesn't offer.
 
-Discogs-Daten werden per Sync-Button in eine eigene [Supabase](https://supabase.com)
-(Postgres) Datenbank geschrieben und dann in einem [Streamlit](https://streamlit.io)
-Frontend durchsucht/gefiltert.
+Discogs data is synced via a sync button into your own [Supabase](https://supabase.com)
+(Postgres) database, then searched/filtered in a [Streamlit](https://streamlit.io)
+frontend.
+
+<!-- Add a screenshot here once you have one, e.g.: -->
+<!-- ![App screenshot](docs/screenshot.png) -->
 
 ## Features
 
-- Filter nach Genre, Style, Format, Jahr und Freitextsuche (Artist/Titel)
-- Manueller Sync-Button (holt die komplette Collection neu von Discogs)
-- Einfacher Passwortschutz für den persönlichen Gebrauch
+- Filter by genre, style, format, year, and free-text search (artist/title)
+- Manual sync button (re-fetches the whole collection from Discogs)
+- Simple password protection for personal use
+- Pagination for large collections
 
 ## Setup
 
-### 1. Discogs Personal Access Token holen
+### 1. Get a Discogs Personal Access Token
 
 [discogs.com/settings/developers](https://www.discogs.com/settings/developers) →
 "Generate new token".
 
-### 2. Supabase-Projekt anlegen
+### 2. Create a Supabase project
 
-1. Neues Projekt auf [supabase.com](https://supabase.com) erstellen (Free Tier reicht)
-2. Im SQL Editor den Inhalt von [`supabase/schema.sql`](supabase/schema.sql) ausführen
-3. Unter Project Settings → API: `SUPABASE_URL` und einen Key (`anon` reicht für
-   dieses Setup, da nur du Zugriff hast) notieren
+1. Create a new project on [supabase.com](https://supabase.com) (free tier is enough)
+2. In the SQL Editor, run the content of [`supabase/schema.sql`](supabase/schema.sql)
+3. Under Project Settings → API: note down `SUPABASE_URL` and an API key
+   (the `secret` key is recommended since the app writes to the database
+   during sync — see the note in the file below)
 
-### 3. Lokal einrichten
+### 3. Local setup
 
 ```bash
-git clone https://github.com/<dein-username>/discogs-genre-filter.git
+git clone https://github.com/<your-username>/discogs-genre-filter.git
 cd discogs-genre-filter
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 
 cp .env.example .env
-# .env mit deinen Werten befüllen (Discogs Token/Username, Supabase URL/Key, APP_PASSWORD)
+# fill in .env with your own values (Discogs token/username, Supabase URL/key, APP_PASSWORD)
 
 streamlit run app.py
 ```
 
-### 4. Deployment (optional, z.B. Streamlit Community Cloud)
+### 4. Deployment (optional, e.g. Streamlit Community Cloud)
 
-1. Repo auf GitHub pushen
-2. Auf [share.streamlit.io](https://share.streamlit.io) das Repo verbinden
-3. Unter "Secrets" die Werte aus [`.streamlit/secrets.toml.example`](.streamlit/secrets.toml.example)
-   eintragen (echte Werte, nicht die Platzhalter)
-4. App ist dann per Link erreichbar — durch den Passwortschutz bleibt sie
-   trotzdem nur für dich nutzbar
+1. Push the repo to GitHub
+2. Connect the repo on [share.streamlit.io](https://share.streamlit.io)
+3. Under "Secrets", enter the values from [`.streamlit/secrets.toml.example`](.streamlit/secrets.toml.example)
+   (real values, not the placeholders)
+4. The app is then reachable via a link — the password gate keeps it
+   usable only by you
 
 ## Sync
 
-Der Sync läuft nicht automatisch im Hintergrund — Klick auf **"🔄 Mit Discogs
-synchronisieren"** in der App holt deine komplette Collection neu von Discogs
-und schreibt sie (upsert) in Supabase. Reicht für den gelegentlichen Gebrauch
-(z.B. nach dem Kauf neuer Platten).
+The sync does not run automatically in the background — clicking
+**"🔄 Sync with Discogs"** in the app re-fetches your entire collection
+from Discogs and writes it (upsert) to Supabase. That's enough for
+occasional use (e.g. after buying new records).
 
-## Tech Stack
+## Running tests
 
-- [Streamlit](https://streamlit.io) – Frontend
-- [Supabase](https://supabase.com) – Postgres-Datenbank
-- [Discogs API](https://www.discogs.com/developers) – Datenquelle
+```bash
+pip install -r requirements.txt
+pytest
+```
 
-## Lizenz
+## Tech stack
 
-MIT, siehe [LICENSE](LICENSE).
+- [Streamlit](https://streamlit.io) – frontend
+- [Supabase](https://supabase.com) – Postgres database
+- [Discogs API](https://www.discogs.com/developers) – data source
+
+## License
+
+MIT, see [LICENSE](LICENSE).

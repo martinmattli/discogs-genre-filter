@@ -1,9 +1,9 @@
 """
-Holt die Discogs-Collection des konfigurierten Users und schreibt sie
-(upsert) in die Supabase-Tabelle `releases`.
+Fetches the configured user's Discogs collection and writes it (upsert)
+into the Supabase `releases` table.
 
-Kann eigenstaendig laufen (python sync.py) oder aus app.py importiert
-und per Button getriggert werden.
+Can run standalone (python sync.py) or be imported from app.py and
+triggered via a button.
 """
 import os
 import time
@@ -26,9 +26,9 @@ def _fetch_collection_page(username: str, token: str, page: int, max_attempts: i
     last_error = None
     for attempt in range(1, max_attempts + 1):
         try:
-            # Token bewusst per Header statt als Query-Parameter: landet die
-            # URL in einer Fehlermeldung (z.B. bei einem Connection-Error),
-            # waere der Token sonst im Klartext sichtbar.
+            # Token deliberately sent via header instead of a query param:
+            # if the URL ends up in an error message (e.g. a connection
+            # error), the token would otherwise be exposed in plain text.
             resp = requests.get(
                 f"{DISCOGS_API}/users/{username}/collection/folders/0/releases",
                 params={"page": page, "per_page": PAGE_SIZE},
@@ -38,8 +38,8 @@ def _fetch_collection_page(username: str, token: str, page: int, max_attempts: i
             resp.raise_for_status()
             return resp.json()
         except requests.exceptions.RequestException as e:
-            # Transiente Netzwerkfehler (z.B. Connection Reset) mit kurzer
-            # Pause erneut versuchen, statt den ganzen Sync abbrechen zu lassen.
+            # Retry transient network errors (e.g. connection reset) after a
+            # short pause instead of aborting the whole sync.
             last_error = e
             if attempt < max_attempts:
                 time.sleep(2 * attempt)
@@ -47,7 +47,7 @@ def _fetch_collection_page(username: str, token: str, page: int, max_attempts: i
 
 
 def fetch_all_releases(username: str, token: str, progress_cb=None) -> list[dict]:
-    """Holt alle Seiten der Collection. progress_cb(seite, seiten_total) optional."""
+    """Fetches all pages of the collection. progress_cb(page, total_pages) is optional."""
     releases = []
     page = 1
     while True:
@@ -62,7 +62,7 @@ def fetch_all_releases(username: str, token: str, progress_cb=None) -> list[dict
         if page >= total_pages:
             break
         page += 1
-        time.sleep(1)  # Discogs Rate-Limit: max 60 req/min mit Token
+        time.sleep(1)  # Discogs rate limit: max 60 req/min with a token
 
     return releases
 
@@ -85,7 +85,7 @@ def _to_row(item: dict) -> dict:
 
 
 def sync_discogs_to_supabase(progress_cb=None) -> int:
-    """Fuehrt einen vollstaendigen Sync durch. Gibt die Anzahl synchronisierter Releases zurueck."""
+    """Runs a full sync. Returns the number of releases synced."""
     username = os.environ["DISCOGS_USERNAME"]
     token = os.environ["DISCOGS_TOKEN"]
 
@@ -93,7 +93,7 @@ def sync_discogs_to_supabase(progress_cb=None) -> int:
     rows = [_to_row(r) for r in releases if r.get("instance_id")]
 
     supabase = _supabase_client()
-    # In Batches upserten, um sehr grosse Collections nicht in einem Request zu senden
+    # Upsert in batches so very large collections aren't sent in one request
     batch_size = 200
     for i in range(0, len(rows), batch_size):
         batch = rows[i : i + batch_size]
@@ -106,5 +106,5 @@ if __name__ == "__main__":
     from dotenv import load_dotenv
 
     load_dotenv()
-    count = sync_discogs_to_supabase(progress_cb=lambda p, t: print(f"Seite {p}/{t}"))
-    print(f"Fertig. {count} Releases synchronisiert.")
+    count = sync_discogs_to_supabase(progress_cb=lambda p, t: print(f"Page {p}/{t}"))
+    print(f"Done. {count} releases synced.")
