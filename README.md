@@ -8,8 +8,8 @@ Discogs data is synced via a sync button into your own [Supabase](https://supaba
 (Postgres) database, then searched/filtered in a [Streamlit](https://streamlit.io)
 frontend.
 
-<!-- Add a screenshot here once you have one, e.g.: -->
-<!-- ![App screenshot](docs/screenshot.png) -->
+![Record list view](docs/screenshot-list.png)
+![Filters applied](docs/screenshot-filters.png)
 
 ## Features
 
